@@ -9,7 +9,120 @@ from kivy.core.window import Window
 from kivy.graphics import Rectangle, Color
 from kivy.uix.widget import Widget
 from kivy.uix.progressbar import ProgressBar
+from kivy.uix.screenmanager import ScreenManager, Screen, SlideTransition
+import requests
+from kivy.uix.boxlayout import BoxLayout
+from kivy_garden.zbarcam import ZBarCam
 
+barcode_cache = {
+    '90162602': str(int(100 - 0.63828*100)),
+    '5000128943710': str(int(100 - 0.0246*100)),
+    '5010018003165': str(int(100 - 0.57348*100))
+}
+headers = {
+            "accept": "application/json",
+            "authorization": "Bearer 648accfc18a23fee30bf0fdc7edd91c9"
+        }
+
+class Scanner(BoxLayout):
+
+    def __init__(self, tamagotchi_instance, **kwargs):
+        super(Scanner, self).__init__(**kwargs)
+        self.tamagotchi = tamagotchi_instance
+        self.cleared = True
+        self.carbon_points = 0
+        Window.clearcolor = (1, 1, 1, 1)
+        vbox = BoxLayout(orientation='vertical', pos_hint= {'x': 0.1, 'y': 0.5})
+
+        self.label = Label(text="Scan a barcode", size_hint=(None, None), size=(300, 50), color=(0,0,0))
+        self.label.id = 'scanner_label'
+        vbox.add_widget(self.label) 
+        confirm = Button(text='Confirm', size_hint=(None, None), size=(300, 50))
+        confirm.bind(on_press=lambda x: self.on_confirm(self.label))
+        vbox.add_widget(confirm)
+
+        clear = Button(text='Clear', size_hint=(None, None), size=(300, 50))
+        clear.bind(on_press=lambda x: self.on_clear(self.label))
+        vbox.add_widget(clear)
+
+        go_back = Button(text='Go back', size_hint=(None, None), size=(300, 50))
+        go_back.bind(on_press=lambda x: self.on_go_back())
+        vbox.add_widget(go_back)
+
+        self.add_widget(vbox)
+        
+        self.zbarcam = ZBarCam()
+        self.add_widget(self.zbarcam)
+        self.zbarcam.pos_hint = {'x': 0, 'y': 0}
+        self.zbarcam.bind(symbols=self.on_symbols)
+
+    def on_confirm(self, label):
+        if self.cleared:
+            label.text = "No item scanned"
+        else:
+            label.text = "Selection confirmed"
+            self.cleared = True
+            if self.carbon_points > 40:
+                self.tamagotchi.points += 1
+                self.tamagotchi.pb_level.value = self.tamagotchi.points
+                self.tamagotchi.level_up()
+            else:
+                self.tamagotchi.pb_life.value -= 1
+        Clock.schedule_once(lambda x: self.reset_label_text(label), 1)
+
+    def on_clear(self, label):
+        if self.cleared:
+            label.text = "No item scanned"
+        else:
+            label.text = "Selection cleared"
+            self.cleared = True
+        Clock.schedule_once(lambda x: self.reset_label_text(label), 1)
+
+    def on_go_back(self):
+        app = App.get_running_app()
+        app.root.transition = SlideTransition(direction='left')
+        app.root.current = 'tamagotchi'
+
+    def reset_label_text(self, label):
+        label.text = 'Scan a barcode'
+
+    def on_symbols(self, instance, symbols):
+        if not self.cleared: return
+        if symbols:
+            data = symbols[0].data
+            self.label.text = get_carbon_score(self, data)
+            self.cleared = False
+        else:
+            self.label.text = 'Scan a barcode'
+
+def get_carbon_score(self, barcode):
+    barcode = barcode.decode('utf-8')
+    if barcode in barcode_cache.keys():
+        carbon_score = barcode_cache[barcode]
+        self.carbon_score = int(carbon_score)
+        if int(carbon_score) > 40:
+            return "Carbon score: " + carbon_score + "\nThis is a more carbon-friendly product"
+        else:
+            return "Carbon score: " + carbon_score + "\nThis is a less carbon-friendly product"
+    else:
+        barcode_query = f"https://api.barcodelookup.com/v3/products?barcode={barcode}&formatted=y&key=0rythb0zy50giv4ziuou4kmot9s6p6"
+        response = requests.get(barcode_query)
+        if response.status_code == 200:
+            brand = response.json()['products'][0]['brand']
+        else:
+            return f'Error: {response.status_code} - {response.text}'
+        response = requests.get(f"https://api.ditchcarbon.com/v1.0/supplier?name={brand}&currency=USD", headers=headers)
+        if response.status_code == 200:
+            carbon_score = str(int(100-float(response.json()['ef_kg_co2eq'])*100))
+            barcode_cache[barcode] = carbon_score
+            self.carbon_score = int(carbon_score)
+            if int(carbon_score) > 40:
+                return "Carbon score: " + carbon_score + "\nThis is a more carbon-friendly product"
+            else:
+                return "Carbon score: " + carbon_score + "\nThis is a less carbon-friendly product"
+        else:
+            return f'Error: {response.status_code} - {response.text}'
+        
 class Tamagotchi(FloatLayout):
     def __init__(self, **kwargs):
         super(Tamagotchi, self).__init__(**kwargs)
@@ -42,12 +155,12 @@ class Tamagotchi(FloatLayout):
                         color= '#000000',
                         pos_hint={"center_x": 0.1, "center_y": 0.8}
                         )
-        self.add_widget(self.life)
-        pb_life = ProgressBar(max=100, pos_hint={"center_x": 0.5, "center_y": 0.8}, size_hint_x=.5)
+        self.add_widget(self.life)  
+        self.pb_life = ProgressBar(max=100, pos_hint={"center_x": 0.5, "center_y": 0.8}, size_hint_x=.5)
 
 # this will update the graphics automatically (75% done)
-        pb_life.value = 50
-        self.add_widget(pb_life)
+        self.pb_life.value = 50
+        self.add_widget(self.pb_life)
         self.image = Image(source="images/egg.png",
                            size_hint=(None, None),
                            size=(125, 125),
@@ -83,12 +196,35 @@ class Tamagotchi(FloatLayout):
         #print(self.points)
         self.level_up()
 
+    def on_scan_press(self):
+        app = App.get_running_app()
+        app.root.transition = SlideTransition(direction='right')
+        app.root.current = 'scanner'
+
+class TamagotchiScreen(Screen):
+    def __init__(self, **kwargs):
+        super(TamagotchiScreen, self).__init__(**kwargs)
+        self.tamagotchi = Tamagotchi() 
+        self.add_widget(self.tamagotchi)
+
+class ScannerScreen(Screen):
+    def __init__(self, tamagotchi_instance, **kwargs):
+        super(ScannerScreen, self).__init__(**kwargs)
+        self.add_widget(Scanner(tamagotchi_instance=tamagotchi_instance))
+
+class MyScreenManager(ScreenManager):
+    pass
 
 class TamagotchiApp(App):
     def build(self):
         Window.clearcolor = (1, 1, 1, 1)
-        return Tamagotchi()
+        sm = MyScreenManager(transition=SlideTransition(direction='right'))
+        tamagotchi_screen = TamagotchiScreen(name='tamagotchi')
+        scanner_screen = ScannerScreen(tamagotchi_instance=tamagotchi_screen.tamagotchi, name='scanner')
+        sm.add_widget(tamagotchi_screen)
+        sm.add_widget(scanner_screen)
 
+        return sm
 
 if __name__ == "__main__":
     TamagotchiApp().run()
