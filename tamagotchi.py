@@ -13,6 +13,11 @@ from kivy.uix.screenmanager import ScreenManager, Screen, SlideTransition
 import requests
 from kivy.uix.boxlayout import BoxLayout
 from kivy_garden.zbarcam import ZBarCam
+import serial
+
+# address = '84:C6:92:B0:84:47'
+# baud_rate = 9600
+# ser = serial.Serial('COM4', baud_rate)
 
 barcode_cache = {
     '90162602': str(int(100 - 0.63828*100)),
@@ -201,6 +206,50 @@ class Tamagotchi(FloatLayout):
         app.root.transition = SlideTransition(direction='right')
         app.root.current = 'scanner'
 
+    def on_find_press(self):
+        app = App.get_running_app()
+        app.root.transition = SlideTransition(direction='left')
+        app.root.current = 'finder'
+
+class Finder(GridLayout):
+    def __init__(self, **kwargs):
+        super(Finder, self).__init__(**kwargs)
+        Window.clearcolor = (1, 1, 1, 1)
+        self.cols=3
+
+        s = Button(text='Sugar', size=(300, 50))
+        s.bind(on_press=lambda x: self.on_s())
+        self.add_widget(s)
+
+        r = Button(text='Red Bull', size=(300, 50))
+        r.bind(on_press=lambda x: self.on_r())
+        self.add_widget(r)
+
+        m = Button(text='Milk', size=(300, 50))
+        m.bind(on_press=lambda x: self.on_m())
+        self.add_widget(m)
+
+        go_back = Button(text='Go back', size=(300, 50))
+        go_back.bind(on_press=lambda x: self.on_go_back())
+        self.add_widget(go_back)
+    
+    def on_s(self):
+        # ser.write(bytes('s', 'utf-8'))
+        pass
+
+    def on_r(self):
+        # ser.write(bytes('r', 'utf-8'))
+        pass
+
+    def on_m(self):
+        # ser.write(bytes('m', 'utf-8'))
+        pass
+
+    def on_go_back(self):
+        app = App.get_running_app()
+        app.root.transition = SlideTransition(direction='right')
+        app.root.current = 'tamagotchi'
+
 class TamagotchiScreen(Screen):
     def __init__(self, **kwargs):
         super(TamagotchiScreen, self).__init__(**kwargs)
@@ -212,6 +261,11 @@ class ScannerScreen(Screen):
         super(ScannerScreen, self).__init__(**kwargs)
         self.add_widget(Scanner(tamagotchi_instance=tamagotchi_instance))
 
+class FinderScreen(Screen):
+    def __init__(self, **kwargs):
+        super(FinderScreen, self).__init__(**kwargs)
+        self.add_widget(Finder())
+
 class MyScreenManager(ScreenManager):
     pass
 
@@ -221,8 +275,10 @@ class TamagotchiApp(App):
         sm = MyScreenManager(transition=SlideTransition(direction='right'))
         tamagotchi_screen = TamagotchiScreen(name='tamagotchi')
         scanner_screen = ScannerScreen(tamagotchi_instance=tamagotchi_screen.tamagotchi, name='scanner')
+        finder_screen = FinderScreen(name='finder')
         sm.add_widget(tamagotchi_screen)
         sm.add_widget(scanner_screen)
+        sm.add_widget(finder_screen)
 
         return sm
 
