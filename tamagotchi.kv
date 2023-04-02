@@ -1,0 +1,63 @@
+<Tamagotchi>:
+    Button:
+        text: "Scan"
+        size_hint: None, None
+        size: 70, 50
+        pos_hint: {"center_x": 0.5, "center_y": 0.4}
+        background_color: 0, 0, 0, 0
+        background_normal: ""
+        background_down: ""
+        canvas.before:
+            Color:
+                rgba: 0.2, 0.6, 0.9, 1
+            RoundedRectangle:
+                pos: self.pos
+                size: self.size
+                radius: [10, 10, 10, 10]
+    GridLayout:
+        cols: 3
+        size_hint: None, None
+        size: 340, 50
+        padding: 10
+        spacing:10
+        pos_hint: {"center_x": 0.5, "center_y": 0.2}
+        Button:
+            text: "Level up"
+            size_hint: None, None
+            background_color: 0, 0, 0, 0
+            background_normal: ""
+            background_down: ""
+            canvas.before:
+                Color:
+                    rgba: 0.2, 0.6, 0.9, 1
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [10, 10, 10, 10]
+            on_press: root.on_button_press()
+        Button:
+            text: "Find item"
+            size_hint: None, None
+            background_color: 0, 0, 0, 0
+            background_normal: ""
+            background_down: ""
+            canvas.before:
+                Color:
+                    rgba: 0.2, 0.6, 0.9, 1
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [10, 10, 10, 10]
+        Button:
+            text: "Custom"
+            size_hint: None, None
+            background_color: 0, 0, 0, 0
+            background_normal: ""
+            background_down: ""
+            canvas.before:
+                Color:
+                    rgba: 0.2, 0.6, 0.9, 1
+                RoundedRectangle:
+                    pos: self.pos
+                    size: self.size
+                    radius: [10, 10, 10, 10]
