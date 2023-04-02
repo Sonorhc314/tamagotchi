@@ -14,6 +14,7 @@
                 pos: self.pos
                 size: self.size
                 radius: [10, 10, 10, 10]
+        on_press: root.on_scan_press()
     GridLayout:
         cols: 3
         size_hint: None, None
@@ -48,6 +49,7 @@
                     pos: self.pos
                     size: self.size
                     radius: [10, 10, 10, 10]
+            on_press: root.on_find_press()
         Button:
             text: "Custom"
             size_hint: None, None
