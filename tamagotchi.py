@@ -14,10 +14,11 @@ import requests
 from kivy.uix.boxlayout import BoxLayout
 from kivy_garden.zbarcam import ZBarCam
 import serial
+import car
 
-# address = '84:C6:92:B0:84:47'
-# baud_rate = 9600
-# ser = serial.Serial('COM4', baud_rate)
+address = '84:C6:92:B0:84:47'
+baud_rate = 9600
+ser = serial.Serial('COM3', baud_rate)
 
 barcode_cache = {
     '90162602': str(int(100 - 0.63828*100)),
@@ -28,6 +29,8 @@ headers = {
             "accept": "application/json",
             "authorization": "Bearer 648accfc18a23fee30bf0fdc7edd91c9"
         }
+
+robot = car.Car()
 
 class Scanner(BoxLayout):
 
@@ -234,16 +237,19 @@ class Finder(GridLayout):
         self.add_widget(go_back)
     
     def on_s(self):
-        # ser.write(bytes('s', 'utf-8'))
-        pass
+        for action in robot.get_actions('S'):
+            ser.write(bytes(action, 'utf-8'))
+            print(action)
 
     def on_r(self):
-        # ser.write(bytes('r', 'utf-8'))
-        pass
+        for action in robot.get_actions('R'):
+            ser.write(bytes(action, 'utf-8'))
+            print(action)
 
     def on_m(self):
-        # ser.write(bytes('m', 'utf-8'))
-        pass
+        for action in robot.get_actions('M'):
+            ser.write(bytes(action, 'utf-8'))
+            print(action)
 
     def on_go_back(self):
         app = App.get_running_app()

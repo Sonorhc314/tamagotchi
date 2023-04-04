@@ -36,4 +36,3 @@ class Car:
         actions.append('S')
         actions = [x.lower() for x in actions]
         return(actions)
-    
